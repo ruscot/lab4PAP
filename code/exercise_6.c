@@ -73,6 +73,7 @@ void lbm_comm_ghost_exchange_ex6(lbm_comm_t * comm, lbm_mesh_t * mesh)
 	//Debut du test
 	//printf("\nCoords %d, %d, comm x : %d, comm y : %d\n", comm->rank_x,comm->rank_y, comm->x, comm->y);
 	//X axis
+	MPI_Status status;
 	if(comm->rank_x == 0){
         // droite
 		coords[0] = comm->rank_x + 1;
@@ -88,6 +89,9 @@ void lbm_comm_ghost_exchange_ex6(lbm_comm_t * comm, lbm_mesh_t * mesh)
 		MPI_Request request2;
         cell = lbm_mesh_get_cell(mesh, comm->width - 1, 0);
         MPI_Irecv(cell,(9 * (comm->height)),MPI_DOUBLE,rank,0,comm->communicator,&request2);
+
+		MPI_Wait(&request, &status);
+        MPI_Wait(&request2, &status);
     }
     else if(comm->rank_x == comm->nb_x - 1){
 		//gauche
@@ -95,15 +99,18 @@ void lbm_comm_ghost_exchange_ex6(lbm_comm_t * comm, lbm_mesh_t * mesh)
 		coords[1] = comm->rank_y;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
 		cell = lbm_mesh_get_cell(mesh, 0, 0);
-		MPI_Request request3;
-        MPI_Irecv(cell,(9 * (comm->height)),MPI_DOUBLE,rank, 0,comm->communicator,&request3);
+		MPI_Request request;
+        MPI_Irecv(cell,(9 * (comm->height)),MPI_DOUBLE,rank, 0,comm->communicator,&request);
         
 		coords[0] = comm->rank_x - 1;
 		coords[1] = comm->rank_y;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
         cell = lbm_mesh_get_cell(mesh, 1, 0);
-		MPI_Request request4;
-        MPI_Isend(cell,(9 * (comm->height)),MPI_DOUBLE,rank, 0,comm->communicator, &request4);
+		MPI_Request request2;
+        MPI_Isend(cell,(9 * (comm->height)),MPI_DOUBLE,rank, 0,comm->communicator, &request2);
+
+		MPI_Wait(&request, &status);
+        MPI_Wait(&request2, &status);
     }
     else{ 
 		//gauche
@@ -111,31 +118,35 @@ void lbm_comm_ghost_exchange_ex6(lbm_comm_t * comm, lbm_mesh_t * mesh)
 		coords[1] = comm->rank_y;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
 		cell = lbm_mesh_get_cell(mesh, 0, 0);
-		MPI_Request request5;
-        MPI_Irecv(cell,(9 * (comm->height)),MPI_DOUBLE,rank,0,comm->communicator,&request5);
+		MPI_Request request;
+        MPI_Irecv(cell,(9 * (comm->height)),MPI_DOUBLE,rank,0,comm->communicator,&request);
         
 		coords[0] = comm->rank_x - 1;
 		coords[1] = comm->rank_y;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
         cell = lbm_mesh_get_cell(mesh, 1, 0);
-		MPI_Request request6;
-        MPI_Isend(cell,(9 * (comm->height)),MPI_DOUBLE,rank,0,comm->communicator, &request6);
+		MPI_Request request2;
+        MPI_Isend(cell,(9 * (comm->height)),MPI_DOUBLE,rank,0,comm->communicator, &request2);
 		
 		// droite
 		coords[0] = comm->rank_x + 1;
 		coords[1] = comm->rank_y;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
         cell = lbm_mesh_get_cell(mesh, comm->width - 2, 0);
-		MPI_Request request7;
-        MPI_Isend(cell,(9 * (comm->height)),MPI_DOUBLE,rank,0,comm->communicator, &request7);
+		MPI_Request request3;
+        MPI_Isend(cell,(9 * (comm->height)),MPI_DOUBLE,rank,0,comm->communicator, &request3);
 
 		coords[0] = comm->rank_x + 1;
 		coords[1] = comm->rank_y;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
         cell = lbm_mesh_get_cell(mesh, comm->width - 1, 0);
-		MPI_Request request8;
-        MPI_Irecv(cell,(9 * (comm->height)),MPI_DOUBLE, rank, 0,comm->communicator,&request8);
+		MPI_Request request4;
+        MPI_Irecv(cell,(9 * (comm->height)),MPI_DOUBLE, rank, 0,comm->communicator,&request4);
 
+		MPI_Wait(&request, &status);
+        MPI_Wait(&request2, &status);
+		MPI_Wait(&request3, &status);
+        MPI_Wait(&request4, &status);
 	}
 	
 	//For the y axis
@@ -144,16 +155,19 @@ void lbm_comm_ghost_exchange_ex6(lbm_comm_t * comm, lbm_mesh_t * mesh)
 		coords[0] = comm->rank_x;
 		coords[1] = comm->rank_y + 1;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
-		MPI_Request yrequest;
+		MPI_Request request;
 		cell = lbm_mesh_get_cell(mesh, 0, comm->height - 2);
-        MPI_Isend(cell, 1,comm->type, rank, 0, comm->communicator, &yrequest);
+        MPI_Isend(cell, 1,comm->type, rank, 0, comm->communicator, &request);
 
 		coords[0] = comm->rank_x;
 		coords[1] = comm->rank_y + 1;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
 		cell = lbm_mesh_get_cell(mesh, 0, comm->height - 1);
-		MPI_Request yrequest1;
-        MPI_Irecv(cell, 1,comm->type, rank, 0, comm->communicator,&yrequest1);
+		MPI_Request request1;
+        MPI_Irecv(cell, 1,comm->type, rank, 0, comm->communicator,&request1);
+
+		MPI_Wait(&request, &status);
+        MPI_Wait(&request1, &status);
     }
     else if(comm->rank_y == comm->nb_y - 1){
 		//Haut
@@ -161,16 +175,19 @@ void lbm_comm_ghost_exchange_ex6(lbm_comm_t * comm, lbm_mesh_t * mesh)
 		coords[1] = comm->rank_y - 1;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
 		cell = lbm_mesh_get_cell(mesh, 0, 0);
-		MPI_Request yrequest2;
-		MPI_Irecv(cell, 1,comm->type,rank, 0, comm->communicator,&yrequest2);
+		MPI_Request request;
+		MPI_Irecv(cell, 1,comm->type,rank, 0, comm->communicator,&request);
 
 		//Buffer full
 		coords[0] = comm->rank_x ;
 		coords[1] = comm->rank_y -1 ;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
 		cell = lbm_mesh_get_cell(mesh, 0, 1);
-		MPI_Request yrequest3;
-        MPI_Isend(cell, 1,comm->type, rank, 0, comm->communicator, &yrequest3);
+		MPI_Request request1;
+        MPI_Isend(cell, 1,comm->type, rank, 0, comm->communicator, &request1);
+
+		MPI_Wait(&request, &status);
+        MPI_Wait(&request1, &status);
 	}
     else{ 
 		//Haut
@@ -178,30 +195,35 @@ void lbm_comm_ghost_exchange_ex6(lbm_comm_t * comm, lbm_mesh_t * mesh)
 		coords[1] = comm->rank_y - 1;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
 		cell = lbm_mesh_get_cell(mesh, 0, 0);
-		MPI_Request yrequest4;
-		MPI_Irecv(cell, 1,comm->type, rank, 0, comm->communicator,&yrequest4);
+		MPI_Request request;
+		MPI_Irecv(cell, 1,comm->type, rank, 0, comm->communicator,&request);
 		
 		coords[0] = comm->rank_x ;
 		coords[1] = comm->rank_y - 1;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
 		cell = lbm_mesh_get_cell(mesh, 0, 1);
-		MPI_Request yrequest5;
-        MPI_Isend(cell, 1,comm->type, rank, 0, comm->communicator, &yrequest5);
+		MPI_Request request1;
+        MPI_Isend(cell, 1,comm->type, rank, 0, comm->communicator, &request1);
 		
 		//Bas
 		coords[0] = comm->rank_x ;
 		coords[1] = comm->rank_y + 1;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
 		cell = lbm_mesh_get_cell(mesh, 0, comm->height - 2);
-		MPI_Request yrequest6;
-        MPI_Isend(cell, 1,comm->type, rank, 0, comm->communicator, &yrequest6);
+		MPI_Request request2;
+        MPI_Isend(cell, 1,comm->type, rank, 0, comm->communicator, &request2);
 
 		coords[0] = comm->rank_x;
 		coords[1] = comm->rank_y + 1;
 		MPI_Cart_rank(comm->communicator, coords, &rank);
 		cell = lbm_mesh_get_cell(mesh, 0, comm->height - 1);
-		MPI_Request yrequest7;
-        MPI_Irecv(cell, 1,comm->type, rank, 0, comm->communicator,&yrequest7);	
+		MPI_Request request3;
+        MPI_Irecv(cell, 1,comm->type, rank, 0, comm->communicator,&request3);	
+
+		MPI_Wait(&request, &status);
+        MPI_Wait(&request1, &status);
+		MPI_Wait(&request2, &status);
+        MPI_Wait(&request3, &status);
 	}
 
 	//MPI_Barrier(comm->communicator);
@@ -214,31 +236,38 @@ void lbm_comm_ghost_exchange_ex6(lbm_comm_t * comm, lbm_mesh_t * mesh)
 			cell = lbm_mesh_get_cell(mesh, comm->width-2, comm->height-2);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y + 1;
-			MPI_Request drequest;
+			MPI_Request request;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Isend(cell, 9,MPI_DOUBLE,rank, 0,comm->communicator, &drequest);
+			MPI_Isend(cell, 9,MPI_DOUBLE,rank, 0,comm->communicator, &request);
 			//Bas droite receive
 			cell = lbm_mesh_get_cell(mesh, comm->width-1, comm->height-1);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y + 1;
-			MPI_Request drequest1;
+			MPI_Request request1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &drequest1);
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request1);
+
+
+			MPI_Wait(&request, &status);
+			MPI_Wait(&request1, &status);
 		} else if(comm->rank_y == comm->nb_y - 1){
 			//Haut droite send 
 			cell = lbm_mesh_get_cell(mesh, comm->width - 2, 1);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request drequest2;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &drequest2);
+			MPI_Request request;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request);
 			//Haut droite recv
 			cell = lbm_mesh_get_cell(mesh, comm->width - 1, 0);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request drequest3;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &drequest3);
+			MPI_Request request1;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request1);
+			
+			MPI_Wait(&request, &status);
+			MPI_Wait(&request1, &status);
 		}
     	else{ 
 			//Bas droite send 
@@ -246,30 +275,35 @@ void lbm_comm_ghost_exchange_ex6(lbm_comm_t * comm, lbm_mesh_t * mesh)
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request drequest4;
-			MPI_Isend(cell, 9,MPI_DOUBLE,rank, 0,comm->communicator, &drequest4);
+			MPI_Request request;
+			MPI_Isend(cell, 9,MPI_DOUBLE,rank, 0,comm->communicator, &request);
 			//Bas droite receive
 			cell = lbm_mesh_get_cell(mesh, comm->width-1, comm->height-1);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request drequest5;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &drequest5);
+			MPI_Request request1;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request1);
 
 			//Haut droite send 
 			cell = lbm_mesh_get_cell(mesh, comm->width - 2, 1);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request drequest6;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &drequest6);
+			MPI_Request request2;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request2);
 			//Haut droite recv
 			cell = lbm_mesh_get_cell(mesh, comm->width - 1, 0);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request drequest7;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &drequest7);
+			MPI_Request request3;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request3);
+
+			MPI_Wait(&request, &status);
+			MPI_Wait(&request1, &status);
+			MPI_Wait(&request2, &status);
+			MPI_Wait(&request3, &status);
 		}
 	} else if(comm->rank_x == comm->nb_x - 1){
 		if(comm->rank_y == 0){
@@ -278,62 +312,73 @@ void lbm_comm_ghost_exchange_ex6(lbm_comm_t * comm, lbm_mesh_t * mesh)
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request drequest8;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &drequest8);
+			MPI_Request request;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request);
 			//Bas gauche send
 			cell = lbm_mesh_get_cell(mesh, 1, comm->height - 2);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request drequest9;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &drequest9);
+			MPI_Request request1;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request1);
+
+			MPI_Wait(&request, &status);
+			MPI_Wait(&request1, &status);
 		} else if(comm->rank_y == comm->nb_y - 1){
 			//haut gauche recv
 			cell = lbm_mesh_get_cell(mesh, 0, 0);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d2request;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &d2request);
+			MPI_Request request;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request);
 
 			//Haut gauche send 
 			cell = lbm_mesh_get_cell(mesh, 1, 1);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d2request1;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &d2request1);
+			MPI_Request request1;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request1);
+
+			MPI_Wait(&request, &status);
+			MPI_Wait(&request1, &status);
 		} else{ 
 			//haut gauche recv
 			cell = lbm_mesh_get_cell(mesh, 0, 0);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d2request2;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &d2request2);
+			MPI_Request request;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request);
 
 			//Haut gauche send 
 			cell = lbm_mesh_get_cell(mesh, 1, 1);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d2request3;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &d2request3);
+			MPI_Request request1;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request1);
 
 			//Bas gauche recv
 			cell = lbm_mesh_get_cell(mesh, 0, comm->height - 1);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d2request4;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &d2request4);
+			MPI_Request request2;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request2);
 			//Bas gauche send
 			cell = lbm_mesh_get_cell(mesh, 1, comm->height - 2);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d2request5;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &d2request5);
+			MPI_Request request3;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request3);
+
+			MPI_Wait(&request, &status);
+			MPI_Wait(&request1, &status);
+			MPI_Wait(&request2, &status);
+			MPI_Wait(&request3, &status);
 		}
 	} else {
 		if(comm->rank_y == 0){
@@ -342,122 +387,141 @@ void lbm_comm_ghost_exchange_ex6(lbm_comm_t * comm, lbm_mesh_t * mesh)
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d3request;
-			MPI_Isend(cell, 9,MPI_DOUBLE, rank, 0,comm->communicator, &d3request);
+			MPI_Request request;
+			MPI_Isend(cell, 9,MPI_DOUBLE, rank, 0,comm->communicator, &request);
 			//Bas droite receive
 			cell = lbm_mesh_get_cell(mesh, comm->width-1, comm->height-1);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d3request1;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &d3request1);
+			MPI_Request request1;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request1);
 
 			//Bas gauche recv
 			cell = lbm_mesh_get_cell(mesh, 0, comm->height - 1);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d3request2;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &d3request2);
+			MPI_Request request2;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request2);
 			//Bas gauche send
 			cell = lbm_mesh_get_cell(mesh, 1, comm->height - 2);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d3request3;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &d3request3);
+			MPI_Request request3;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request3);
+
+			MPI_Wait(&request, &status);
+			MPI_Wait(&request1, &status);
+			MPI_Wait(&request2, &status);
+			MPI_Wait(&request3, &status);
 		} else if(comm->rank_y == comm->nb_y - 1){
 			//haut gauche recv
 			cell = lbm_mesh_get_cell(mesh, 0, 0);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d3request4;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &d3request4);
+			MPI_Request request;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request);
 
 			//Haut gauche send 
 			cell = lbm_mesh_get_cell(mesh, 1, 1);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d3request5;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &d3request5);
+			MPI_Request request1;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request1);
 
 			//Haut droite send 
 			cell = lbm_mesh_get_cell(mesh, comm->width - 2, 1);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d3request6;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &d3request6);
+			MPI_Request request2;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request2);
 			//Haut droite recv
 			cell = lbm_mesh_get_cell(mesh, comm->width - 1, 0);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d3request7;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &d3request7);
+			MPI_Request request3;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request3);
+
+			MPI_Wait(&request, &status);
+			MPI_Wait(&request1, &status);
+			MPI_Wait(&request2, &status);
+			MPI_Wait(&request3, &status);
 		} else{ 
 			//Bas droite send 
 			cell = lbm_mesh_get_cell(mesh, comm->width-2, comm->height-2);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d3request8;
-			MPI_Isend(cell, 9,MPI_DOUBLE, rank, 0,comm->communicator, &d3request8);
+			MPI_Request request;
+			MPI_Isend(cell, 9,MPI_DOUBLE, rank, 0,comm->communicator, &request);
 			//Bas droite receive
 			cell = lbm_mesh_get_cell(mesh, comm->width-1, comm->height-1);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d3request9;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &d3request9);
+			MPI_Request request1;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request1);
 			
 			//haut gauche recv
 			cell = lbm_mesh_get_cell(mesh, 0, 0);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d4request;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &d4request);
+			MPI_Request request2;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request2);
 
 			//Haut gauche send 
 			cell = lbm_mesh_get_cell(mesh, 1, 1);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d4request1;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &d4request1);
+			MPI_Request request3;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request3);
 			
 			//Haut droite send 
 			cell = lbm_mesh_get_cell(mesh, comm->width - 2, 1);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d4request2;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &d4request2);
+			MPI_Request request4;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request4);
 			//Haut droite recv
 			cell = lbm_mesh_get_cell(mesh, comm->width - 1, 0);
 			coords[0] = comm->rank_x + 1;
 			coords[1] = comm->rank_y - 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d4request3;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &d4request3);
+			MPI_Request request5;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request5);
 
 			//Bas gauche recv
 			cell = lbm_mesh_get_cell(mesh, 0, comm->height - 1);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d4request4;
-			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &d4request4);
+			MPI_Request request6;
+			MPI_Irecv(cell, 9, MPI_DOUBLE, rank, 0, comm->communicator, &request6);
 			//Bas gauche send
 			cell = lbm_mesh_get_cell(mesh, 1, comm->height - 2);
 			coords[0] = comm->rank_x - 1;
 			coords[1] = comm->rank_y + 1;
 			MPI_Cart_rank(comm->communicator, coords, &rank);
-			MPI_Request d4request5;
-			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &d4request5);
+			MPI_Request request7;
+			MPI_Isend(cell, 9, MPI_DOUBLE, rank, 0,comm->communicator, &request7);
+
+			MPI_Wait(&request, &status);
+			MPI_Wait(&request1, &status);
+			MPI_Wait(&request2, &status);
+			MPI_Wait(&request3, &status);
+			MPI_Wait(&request4, &status);
+			MPI_Wait(&request5, &status);
+			MPI_Wait(&request6, &status);
+			MPI_Wait(&request7, &status);
 		}
 	}
 	//MPI_Barrier(comm->communicator);
