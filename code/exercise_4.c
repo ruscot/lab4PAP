@@ -26,19 +26,31 @@
 
 /****************************************************/
 
+int calculateDimY(int size){
+	int y = 2;
+	int i;
+	for( i = y ; i < size / 2; i++ ){
+		if( size % i == 0){
+			y = i;
+		}
+	}
+
+	return y;
+}
+
 void lbm_comm_init_ex4(lbm_comm_t * comm, int total_width, int total_height)
 {
 	//
 	// TODO: calculate the splitting parameters for the current task.
 	//
 	//int rank; 
-	printf("\nStart of Init exercise 4\n");
+	//printf("\nStart of Init exercise 4\n");
 	int comm_size;
 	//MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
-	int dim_y = 2 ;
+	int dim_y = calculateDimY(comm_size) ;
 	//todo a changer
-	if(comm_size % 2 != 0 || (total_width % (comm_size/dim_y)) != 0 || total_height % 2 != 0){
+	if(comm_size % dim_y != 0 || (total_width % (comm_size/dim_y)) != 0 || total_height % dim_y != 0){
 		exit(1);
 	}
 	
