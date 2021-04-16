@@ -45,38 +45,53 @@ void lbm_comm_ghost_exchange_ex3(lbm_comm_t * comm, lbm_mesh_t * mesh)
 	//double * cell = lbm_mesh_get_cell(mesh, local_x, local_y);
 	//double * cell = lbm_mesh_get_cell(mesh, comm->width - 1, 0);
 	double * cell;
-	MPI_Request request = MPI_REQUEST_NULL;
+	//MPI_Request request = MPI_REQUEST_NULL;
+    MPI_Status status;
 	if(comm->rank_x == 0){
         // droite
+        MPI_Request request, request2;
         cell = lbm_mesh_get_cell(mesh, comm->width - 2, 0);
         MPI_Isend(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x + 1),0,MPI_COMM_WORLD, &request);
 
         cell = lbm_mesh_get_cell(mesh, comm->width - 1, 0);
-        MPI_Irecv(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x + 1),0,MPI_COMM_WORLD,&request);
+        MPI_Irecv(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x + 1),0,MPI_COMM_WORLD,&request2);
+
+        MPI_Wait(&request, &status);
+        MPI_Wait(&request2, &status);
     }
     else if(comm->rank_x == comm->nb_x - 1){
 		//gauche
+        MPI_Request request, request2;
 		cell = lbm_mesh_get_cell(mesh, 1, 0);
         MPI_Isend(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x - 1),0,MPI_COMM_WORLD, &request);
 
 		cell = lbm_mesh_get_cell(mesh, 0, 0);
-        MPI_Irecv(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x - 1),0,MPI_COMM_WORLD, &request);
+        MPI_Irecv(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x - 1),0,MPI_COMM_WORLD, &request2);
+
+        MPI_Wait(&request, &status);
+        MPI_Wait(&request2, &status);
         
     }
     else{
+        MPI_Request request, request2, request3, request4;
         //gauche        
         cell = lbm_mesh_get_cell(mesh, 1, 0);
         MPI_Isend(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x - 1),0,MPI_COMM_WORLD, &request);
 		
 		// droite
         cell = lbm_mesh_get_cell(mesh, comm->width - 2, 0);
-        MPI_Isend(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x + 1),0,MPI_COMM_WORLD, &request);
+        MPI_Isend(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x + 1),0,MPI_COMM_WORLD, &request2);
 
         cell = lbm_mesh_get_cell(mesh, comm->width - 1, 0);
-        MPI_Irecv(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x + 1),0,MPI_COMM_WORLD,&request);
+        MPI_Irecv(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x + 1),0,MPI_COMM_WORLD,&request3);
 
 		//gauche
 		cell = lbm_mesh_get_cell(mesh, 0, 0);
-        MPI_Irecv(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x - 1),0,MPI_COMM_WORLD,&request);
+        MPI_Irecv(cell,(9 * comm->height),MPI_DOUBLE,(comm->rank_x - 1),0,MPI_COMM_WORLD,&request4);
+
+        MPI_Wait(&request, &status);
+        MPI_Wait(&request2, &status);
+        MPI_Wait(&request3, &status);
+        MPI_Wait(&request4, &status);
     }
 }
