@@ -23,21 +23,16 @@ void sequentialMatrixMultiplication(int dimension, double *A, double *B, double 
 
 void parallelMatrixMultiplication(int dimension, double *A, double *B, double *C, int rank, int w_size)
 {
-    int sizePerRank = dimension / (w_size - 1);
+    int sizePerRank = dimension*dimension / (w_size - 1);
     int i = 0;
     int j = 0;
     int k = 0;
-    printMatrix(dimension, A);
-    printMatrix(dimension, B);
-    printMatrix(dimension, C);
     //Nombre dans C 
     for (i = sizePerRank * (rank - 1); i < sizePerRank; i++) {
         for (j = 0; j < dimension; j++) {
-            printf("\nA : %f B : %f\n",A[(rank - 1) + j * dimension], B[j + (rank - 1) * dimension]);
-            C[i + (rank - 1) * dimension] = A[(rank - 1) + j * dimension] * B[j + (rank - 1) * dimension];
+            C[i + (rank - 1) * dimension] += A[(rank - 1) + j * dimension] * B[j + (rank - 1) * dimension];
         }
     }
-    
 }
 
 int main(int argc, char *argv[])
@@ -123,37 +118,41 @@ int main(int argc, char *argv[])
                 MPI_Send(B, mat_size*mat_size, MPI_DOUBLE, numberOfRank, 0, MPI_COMM_WORLD);
 
             } 
-            //sequentialMatrixMultiplication_REF(mat_size, A, B , C);
             
-            double* tmp;
+            double tmp[mat_size*mat_size];
             
-            printf ("\n There send \n", av) ;
-            //initMatrixZero(mat_size, tmp);
-            printf ("\n There send \n", av) ;
             for(numberOfRank = 1; numberOfRank < w_size; numberOfRank++){
                 //On récupère le calcul de C dans des différents coeurs
                 MPI_Recv(tmp, mat_size*mat_size, MPI_DOUBLE, numberOfRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 //On l'ajoute à la matrice C
+                int sizePerRank = mat_size*mat_size / (w_size - 1);
+                int i = 0;
+                //Nombre dans C 
+                for (i = sizePerRank * (numberOfRank - 1); i < sizePerRank; i++) {
+                    C[i + (numberOfRank - 1) * mat_size] = tmp[i + (numberOfRank - 1) * mat_size] ;
+                }
+
 
             } 
             //free(tmp);
             experiments [exp] = MPI_Wtime() - start;
         } else {
             //On réceptionne les matrices A et B de 0
-            printf ("\n There receive \n", av) ;
-            double* tmpA;
-            double* tmpB;
+            double tmpA[mat_size*mat_size];
+            double tmpB[mat_size*mat_size];
             MPI_Recv(tmpA, mat_size*mat_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             MPI_Recv(tmpB, mat_size*mat_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            printf ("\n There receive 2 \n", av) ;
-            double* tmp;
-            //initMatrixZero(mat_size, tmp);
+            double tmp1[mat_size*mat_size];
+            int i;
+            for(i = 0; i < mat_size*mat_size; i++){
+                tmp1[i] = 0;
+            }
             //Il faut calculer la partie de C qui nous interesse
-            parallelMatrixMultiplication(mat_size, tmpA, tmpB, tmp, my_rank, w_size);
+            parallelMatrixMultiplication(mat_size, tmpA, tmpB, tmp1, my_rank, w_size);
 
             //Il faut envoyer au rank 0 la matrice C que l'on a calculé
-            MPI_Send(tmp, mat_size*mat_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-            //free(tmp);
+            MPI_Send(tmp1, mat_size*mat_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+        
         }
         
     }
