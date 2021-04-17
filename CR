@@ -35,5 +35,5 @@ Compte rendu lab 4 :
 
     Extension :
         Nous avons commencer le TP sur la multiplication de matrice.
-        L'algorithme de FOX ne semble pas totalement fonctionnel... Il doit y avoir des bugs....
+        L'algorithme de Fox se trouve dans le fichiers matrix_multiplication_fox. Il ne semble pas totalement fonctionnel... Il doit y avoir des bugs....
         

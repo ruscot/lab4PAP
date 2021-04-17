@@ -14,7 +14,6 @@ void parallelMatrixMultiplication(int dimension, double *A, double *B, double *C
     int j = 0;
     int k = 0;
     //Nombre dans C
-
     for (i = sizePerRank * (rank - 1); i < sizePerRank; i++) {
         for (j = 0; j < dimension; j++) {
             C[i + (rank - 1) * dimension] += A[(rank - 1) + j * dimension] * B[j + (rank - 1) * dimension];
@@ -24,22 +23,27 @@ void parallelMatrixMultiplication(int dimension, double *A, double *B, double *C
 
 void parallelFoxMatrixMultiplication(int dimension, double *A, double *B, double *C, int rank, int w_size)
 {
-    //On part du principe qu'on a autant de coeur que de dimension pour le moment
-    int nbRankPerDimension = (w_size - 1) / dimension;
+    //Avec moins de coeur que de dimension
+    int nbCasePerRank = (dimension*dimension) / (w_size - 1);
     int i = 0;
     int j = 0;
     int k = 0;
     int colonne,ligne;
     double nbCourantA = 0;
     double saveFirst;
-    colonne = (rank-1) % nbRankPerDimension;
-    ligne = (rank-1) / nbRankPerDimension;
+    //printf("\nDebut du calcul local\n");
     //On suppose que l'on a un coeur pour chaque case de notre matrice
     for(k = 0; k < dimension; k++){
-        //Il faut récupérer le la diagonale courante 
-        nbCourantA = A[ligne + dimension * k];
-        //Local computation
-        C[colonne + ligne] = C[colonne + ligne] + nbCourantA * B[colonne + ligne];
+        //Pour chacune des cases que l'on doit calculer
+        for(i = nbCasePerRank * (rank - 1); i < nbCasePerRank * rank; i++){
+            //La case que l'on souhaite changer est la case i
+            //Il faut récupérer le la diagonale courante 
+            ligne = (nbCasePerRank * (rank - 1)) % dimension;
+            nbCourantA = A[ligne + dimension * k];
+            //Local computation
+            C[i] = C[i] + nbCourantA * B[i];
+        }
+        
         //Vertical shift of B
         for(i = 0; i < dimension ; i++){
             saveFirst = B[i * dimension];
@@ -49,6 +53,7 @@ void parallelFoxMatrixMultiplication(int dimension, double *A, double *B, double
             B[(i + 1) * dimension - 1] = saveFirst;
         }
     } 
+    //printf("\nFin du calcul local\n");
     
 }
 
@@ -112,7 +117,7 @@ int main(int argc, char *argv[])
 
     if(my_rank == 0){
         av = average_time() ;  
-        
+        printMatrix(mat_size, C);
         printf ("\n REF sequential time \t\t\t %.3lf seconds\n\n", av) ;
     }
     
@@ -137,18 +142,17 @@ int main(int argc, char *argv[])
             } 
             
             double tmp[mat_size*mat_size];
-            int nbRankPerDimension = (w_size - 1) / mat_size;
-            int sizePerRank = mat_size*mat_size / (w_size - 1);
-            int colonne = (numberOfRank-1) % nbRankPerDimension;
             for(numberOfRank = 1; numberOfRank < w_size; numberOfRank++){
                 //On récupère le calcul de C dans des différents coeurs
+                //printf("\nAvant de tous mettre dans C\n");
                 MPI_Recv(tmp, mat_size*mat_size, MPI_DOUBLE, numberOfRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 //On l'ajoute à la matrice C
-                sizePerRank = mat_size*mat_size / (w_size - 1);
-                colonne = (numberOfRank-1) % nbRankPerDimension;
-                int ligne = (numberOfRank-1) / nbRankPerDimension;
-                //int i = 0;
-                C[colonne + ligne] = tmp[colonne + ligne];
+                int i = 0;
+                int nbCasePerRank = (mat_size*mat_size) / (w_size - 1);
+                for(i = nbCasePerRank * (numberOfRank - 1); i < nbCasePerRank * numberOfRank; i++){
+                    C[i] = tmp[i];
+                }
+                //printf("\nApres avoir tous mit dans C\n");
             } 
             //free(tmp);
             experiments [exp] = MPI_Wtime() - start;
@@ -165,12 +169,13 @@ int main(int argc, char *argv[])
             for(i = 0; i < mat_size*mat_size; i++){
                 tmp1[i] = 0;
             }
-
+            
             //On commence l'algorithme de fox
             parallelFoxMatrixMultiplication(mat_size, tmpA, tmpB, tmp1, my_rank, w_size);
-
+            //printf("\nAvant d'envoyer à 0 \n");
             //Il faut envoyer au rank 0 la matrice C que l'on a calculé
             MPI_Send(tmp1, mat_size*mat_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+            //printf("\nApres avoir envoyé à 0 \n");
         
         }
         
@@ -178,6 +183,7 @@ int main(int argc, char *argv[])
 
     if(my_rank == 0){
         av = average_time() ;  
+        printMatrix(mat_size, C);
         
         printf ("\n my mat_mult \t\t\t %.3lf seconds\n\n", av) ;
     }
