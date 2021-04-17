@@ -24,21 +24,34 @@ void sequentialMatrixMultiplication(int dimension, double *A, double *B, double 
 void parallelMatrixMultiplication(int dimension, double *A, double *B, double *C, int rank, int w_size)
 {
     int sizePerRank = dimension*dimension / (w_size - 1);
+    //printf("\nrank %d size per rank %d\n", rank, sizePerRank);
     int i = 0;
     int j = 0;
-    int k = 0;
-    //Nombre dans C 
-    for (i = sizePerRank * (rank - 1); i < sizePerRank * (rank); i++) {
+    //Nombre dans C
+    /**
+     * 1  2  3  4
+     * 5  6  7  8
+     * 9 10 11 12
+     * 
+     * 1 2 3 4 5 6 7 8 9 10 11 12
+     * */ 
+    int ligneA, colonneB;
+    for (i = sizePerRank * (rank-1); i < sizePerRank * rank; i++) {
+        ligneA = (i - i%dimension) / dimension;
+        colonneB = i % dimension;
+        //printf("\ncolonneB : %d, i : %d\n", colonneB, i);
         for (j = 0; j < dimension; j++) {
-            C[i + (rank - 1) * dimension] += A[(rank - 1) + j * dimension] * B[j + (rank - 1) * dimension];
+            C[i] += A[ligneA * dimension + j] * B[colonneB + j * dimension];
         }
     }
+
+    //printMatrix(dimension, C);
 }
 
 int main(int argc, char *argv[])
 {
     unsigned int exp ;
-    double *A, *B ,*C;
+    double *A, *B ,*C, *C2;
     double *A_check, *B_check ,*C_check;
 
     unsigned int mat_size=0;
@@ -74,6 +87,7 @@ int main(int argc, char *argv[])
         A = allocMatrix(mat_size);
         B = allocMatrix(mat_size);
         C = allocMatrix(mat_size);
+        C2 = allocMatrix(mat_size);
 
     }
 
@@ -95,7 +109,13 @@ int main(int argc, char *argv[])
 
     if(my_rank == 0){
         av = average_time() ;  
-        printMatrix(mat_size, C);
+        //printMatrix(mat_size, A);
+        //printMatrix(mat_size, B);
+        //printMatrix(mat_size, C);
+        /*int  i;
+        for(i = 0; i < mat_size * mat_size; i++){
+            printf("%f ", C[i]);
+        }*/
         printf ("\n REF sequential time \t\t\t %.3lf seconds\n\n", av) ;
     }
     
@@ -105,7 +125,7 @@ int main(int argc, char *argv[])
         if(my_rank == 0){
             initMatrix(mat_size, A);
             initMatrix(mat_size, B);
-            initMatrixZero(mat_size, C);
+            initMatrixZero(mat_size, C2);
             
             start = MPI_Wtime();
             int numberOfRank;
@@ -128,8 +148,9 @@ int main(int argc, char *argv[])
                 int sizePerRank = mat_size*mat_size / (w_size - 1);
                 int i = 0;
                 //Nombre dans C 
-                for (i = sizePerRank * (numberOfRank - 1); i < sizePerRank; i++) {
-                    C[i + (numberOfRank - 1) * mat_size] = tmp[i + (numberOfRank - 1) * mat_size] ;
+                //printMatrix(mat_size, tmp);
+                for (i = sizePerRank * (numberOfRank - 1); i < sizePerRank * numberOfRank; i++) {
+                    C2[i] = tmp[i] ;
                 }
 
 
@@ -149,7 +170,9 @@ int main(int argc, char *argv[])
             }
             //Il faut calculer la partie de C qui nous interesse
             parallelMatrixMultiplication(mat_size, tmpA, tmpB, tmp1, my_rank, w_size);
-
+            //printMatrix(mat_size, tmp1);
+            //printf("\nrank %d\n", my_rank);
+            //printMatrix(mat_size, tmp1);
             //Il faut envoyer au rank 0 la matrice C que l'on a calculé
             MPI_Send(tmp1, mat_size*mat_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
         
@@ -159,7 +182,21 @@ int main(int argc, char *argv[])
 
     if(my_rank == 0){
         av = average_time() ;  
-        printMatrix(mat_size, C);
+        //printMatrix(mat_size, A);
+        //printMatrix(mat_size, B);
+        //printMatrix(mat_size, C2);
+        int i;
+        int res = 0;
+        for(i=0; i < mat_size * mat_size; i++){
+            if(C[i] != C2[i]){
+                res = 1;
+            }
+        }
+        if(res == 1){
+            printf("\n Problem result\n");
+        } else {
+            printf("\n Same result\n");
+        }
         printf ("\n my mat_mult \t\t\t %.3lf seconds\n\n", av) ;
     }
     
@@ -209,6 +246,7 @@ int main(int argc, char *argv[])
         free(A);
         free(B);
         free(C);
+        free(C2);
     }
 
     MPI_Finalize();

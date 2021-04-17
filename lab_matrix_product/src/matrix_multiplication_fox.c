@@ -117,6 +117,8 @@ int main(int argc, char *argv[])
 
     if(my_rank == 0){
         av = average_time() ;  
+        printMatrix(mat_size, A);
+        printMatrix(mat_size, B);
         printMatrix(mat_size, C);
         printf ("\n REF sequential time \t\t\t %.3lf seconds\n\n", av) ;
     }
@@ -183,6 +185,8 @@ int main(int argc, char *argv[])
 
     if(my_rank == 0){
         av = average_time() ;  
+        printMatrix(mat_size, A);
+        printMatrix(mat_size, B);
         printMatrix(mat_size, C);
         
         printf ("\n my mat_mult \t\t\t %.3lf seconds\n\n", av) ;
