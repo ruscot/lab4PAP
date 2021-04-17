@@ -1,0 +1,39 @@
+Vinson Charly
+Martinez Anthony
+
+
+Compte rendu lab 4 :
+
+    Exercices 1 :
+        Nous avons implémenté l'exercice 1 de la façon suivante : 
+            Un block reçoit d'abord sur son côté gauche les informations envoyée par son block se trouvant sur sa gauche. 
+            Ensuite il envoie ses données au block qui se trouve à gauche, puis il envoie ses données sur la droite avant de recevoir 
+            les données du  block de droite.
+            Il y a 2 cas particuliers :
+                Le block se trouvant à l'extrémité droite commence par recevoir du block à gauche puis envoie ses données au block de gauche.
+                Le block se trouvant à l'extrémité gauche commence par envoyer ses données au block qui est à sa droite puis reçoit ses données.
+
+    Exercice 2 :
+        Pour pouvoir paralléliser un peu mieux l'exercice 1 on différencie les rangs, en envoyant d'abord les données pour les rang impair. Les 
+        rangs pair reçoivent d'abord.
+
+    Exercice 3 :
+        Pour obtenir encore plus de parallélisme nous avons passé chacun des envoies et réception en non bloquant.
+
+    Exercice 4 :
+        On passe maintenant à un découpage 2D.
+        Pour pouvoir calculer le nombre de processus que l'on met sur l'axe des X et sur l'axe des Y on a créé une fonction calculateDimY.
+        L'envoie des données se passe de la façon suivante :    
+            On envoie d'abord les données sur l'axe des X puis on envoie sur l'axe des Y et on finit par s'occuper des diagonales.
+
+    Exercice 5 :
+        Pour simplifier l'envoie des données nous avons créé un type de donnée avec MPI_Type_vector.
+
+    Exercice 6 :
+        Pour obtenir un meilleur parallélisme nous avons utilisé les méthode send et recv non bloquantes.
+
+
+    Extension :
+        Nous avons commencer le TP sur la multiplication de matrice.
+        L'algorithme de FOX ne semble pas totalement fonctionnel... Il doit y avoir des bugs....
+        

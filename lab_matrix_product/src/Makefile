@@ -2,7 +2,8 @@ CC = mpicc
 CFLAGS = 
 LDFLAGS =
 
-EXEC = 	matrix_multiplication_seq.run
+EXEC = 	matrix_multiplication_seq.run matrix_multiplication_fox.run
+
 
 HEADER_FILES = $(wildcard *.h)
 
