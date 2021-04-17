@@ -34,6 +34,10 @@ Compte rendu lab 4 :
 
 
     Extension :
-        Nous avons commencer le TP sur la multiplication de matrice.
-        L'algorithme de Fox se trouve dans le fichiers matrix_multiplication_fox. Il ne semble pas totalement fonctionnel... Il doit y avoir des bugs....
+        Nous avons commencer le TP sur la multiplication de matrice. Il faut donner un nombre de coeur impair car on utilise pas le coeur 0 pour 
+        les multiplications, on s'en sert seulement pour avoir le résultat.
+        Il y a une optimisation possible si on n'envoi pas toute matrice dans le retour de calcul d'un coeur, mais seulement la partie qu'il a calculé.
+        (Nous ne l'avons pas fait par manque de temps)
+        L'algorithme de Fox se trouve dans le fichiers matrix_multiplication_fox. Il n'est pas totalement fonctionnel, il y a des erreurs dans le code, 
+        que nous ne trouvons pas... Elles doivent se trouvent au moment ou l'on calcule la matrice en local.
         

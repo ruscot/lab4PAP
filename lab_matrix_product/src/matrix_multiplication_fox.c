@@ -6,6 +6,20 @@
 #include "utils.h"
 
 /* a matrix multiplication without locality (column-first)*/
+void sequentialMatrixMultiplication(int dimension, double *A, double *B, double *C)
+{
+    int i = 0;
+    int j = 0;
+    int k = 0;
+
+    for (i = 0; i < dimension; i++) {
+        for (j = 0; j < dimension; j++) {
+            for (k = 0; k < dimension; k++) {
+                C[i + j * dimension] += A[i + k * dimension] * B[k + j*dimension];
+            }
+        }
+    }
+}
 
 void parallelMatrixMultiplication(int dimension, double *A, double *B, double *C, int rank, int w_size)
 {
@@ -31,6 +45,15 @@ void parallelFoxMatrixMultiplication(int dimension, double *A, double *B, double
     int colonne,ligne;
     double nbCourantA = 0;
     double saveFirst;
+    /*if(rank == 2 || rank == 1){
+        printMatrix(dimension, B);
+    }*/
+    /**
+     * 1 2 3 4
+     * 5 6 7 8
+     * 
+     * 1 2 3 4 5 6 7 8 
+    */
     //printf("\nDebut du calcul local\n");
     //On suppose que l'on a un coeur pour chaque case de notre matrice
     for(k = 0; k < dimension; k++){
@@ -38,20 +61,26 @@ void parallelFoxMatrixMultiplication(int dimension, double *A, double *B, double
         for(i = nbCasePerRank * (rank - 1); i < nbCasePerRank * rank; i++){
             //La case que l'on souhaite changer est la case i
             //Il faut récupérer le la diagonale courante 
-            ligne = (nbCasePerRank * (rank - 1)) % dimension;
-            nbCourantA = A[ligne + dimension * k];
+            ligne = (i - i%dimension) / dimension;
+            //printf("\nLigne courante = %d, rank = %d\n", ligne, rank);
+            nbCourantA = A[k + dimension * ligne];
+            colonne = i%dimension; 
+            //printf("\n Colonne courante = %d, rank = %d\n", colonne, rank);
             //Local computation
-            C[i] = C[i] + nbCourantA * B[i];
+            C[i] += nbCourantA * B[colonne + ligne * dimension];
         }
         
         //Vertical shift of B
         for(i = 0; i < dimension ; i++){
-            saveFirst = B[i * dimension];
-            for(j = 0; j < dimension - 2; j++){
-                B[j + i * dimension] = B[j + i * dimension + 1];
+            saveFirst = B[i];
+            for(j = 0; j < dimension - 1; j++){
+                B[i + j * dimension] = B[i + (j + 1) * dimension];
             }
-            B[(i + 1) * dimension - 1] = saveFirst;
+            B[(dimension - 1) * dimension + i] = saveFirst;
         }
+        /*if(rank == 2){
+            printMatrix(dimension, C);
+        }*/
     } 
     //printf("\nFin du calcul local\n");
     
@@ -117,8 +146,8 @@ int main(int argc, char *argv[])
 
     if(my_rank == 0){
         av = average_time() ;  
-        printMatrix(mat_size, A);
-        printMatrix(mat_size, B);
+        //printMatrix(mat_size, A);
+        //printMatrix(mat_size, B);
         printMatrix(mat_size, C);
         printf ("\n REF sequential time \t\t\t %.3lf seconds\n\n", av) ;
     }
@@ -185,8 +214,8 @@ int main(int argc, char *argv[])
 
     if(my_rank == 0){
         av = average_time() ;  
-        printMatrix(mat_size, A);
-        printMatrix(mat_size, B);
+        //printMatrix(mat_size, A);
+        //printMatrix(mat_size, B);
         printMatrix(mat_size, C);
         
         printf ("\n my mat_mult \t\t\t %.3lf seconds\n\n", av) ;
@@ -214,8 +243,32 @@ int main(int argc, char *argv[])
     if(my_rank == 0){
         sequentialMatrixMultiplication(mat_size, A, B , C);
         
-        sequentialMatrixMultiplication_REF(mat_size, A_check, B_check , C_check);
+        //sequentialMatrixMultiplication_REF(mat_size, A_check, B_check , C_check);
+        int numberOfRank;
+        //sequentialMatrixMultiplication(mat_size, A, B , C);
+        //On envoie en Broadcast les données de A et B
+        for(numberOfRank = 1; numberOfRank < w_size; numberOfRank++){
+            //On récupère le calcul de C dans des différents coeurs
+            //On l'ajoute à la matrice C
+            MPI_Send(A_check, mat_size*mat_size, MPI_DOUBLE, numberOfRank, 0, MPI_COMM_WORLD);
+            MPI_Send(B_check, mat_size*mat_size, MPI_DOUBLE, numberOfRank, 0, MPI_COMM_WORLD);
 
+        } 
+        
+        double tmp[mat_size*mat_size];
+        for(numberOfRank = 1; numberOfRank < w_size; numberOfRank++){
+            //On récupère le calcul de C dans des différents coeurs
+            //printf("\nAvant de tous mettre dans C\n");
+            MPI_Recv(tmp, mat_size*mat_size, MPI_DOUBLE, numberOfRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            //On l'ajoute à la matrice C
+            int i = 0;
+            int nbCasePerRank = (mat_size*mat_size) / (w_size - 1);
+            for(i = nbCasePerRank * (numberOfRank - 1); i < nbCasePerRank * numberOfRank; i++){
+                C_check[i] = tmp[i];
+            }
+            //printf("\nApres avoir tous mit dans C\n");
+        } 
+        //free(tmp)
 
         if(checkMatricesEquality(mat_size, C, C_check)){
             printf("\t CORRECT matrix multiplication result \n");
@@ -230,6 +283,27 @@ int main(int argc, char *argv[])
         free(A_check);
         free(B_check);
         free(C_check);
+    } else {
+        //On réceptionne les matrices A et B de 0
+        double tmpA[mat_size*mat_size];
+        double tmpB[mat_size*mat_size];
+        MPI_Recv(tmpA, mat_size*mat_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(tmpB, mat_size*mat_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        
+        //On initialise la matrice locale C
+        double tmp1[mat_size*mat_size];
+        int i;
+        for(i = 0; i < mat_size*mat_size; i++){
+            tmp1[i] = 0;
+        }
+        
+        //On commence l'algorithme de fox
+        parallelFoxMatrixMultiplication(mat_size, tmpA, tmpB, tmp1, my_rank, w_size);
+        //printf("\nAvant d'envoyer à 0 \n");
+        //Il faut envoyer au rank 0 la matrice C que l'on a calculé
+        MPI_Send(tmp1, mat_size*mat_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+        //printf("\nApres avoir envoyé à 0 \n");
+    
     }
 
 #endif /* CHECK_CORRECTNESS */
